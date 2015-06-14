@@ -1,25 +1,86 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+output: html_document
 ---
+ReproducibleResearch Assignment 1: 
+=================================
+1. Load the data
+First We need to download the data to a local machine source: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip (unzip and save, then point RStudio to the folder containing the file)
+There is a more advanced way to do this by directly using the URL
 
+```{r}
+df <- read.csv("activity.csv")
+```
 
-## Loading and preprocessing the data
+2. Process/transform the data (removing the NA)
 
+```{r}
+df <- na.omit(df) ## removes the NA
+```
 
+What is mean total number of steps taken per day?
+We first calculate the total number of steps taken per day and display it
+```{r}
+Total.Step.Day <- aggregate(steps ~ date, df, sum)
+barplot(Total.Step.Day$steps, names.arg = Total.Step.Day$date, xlab = "date", ylab = "total#Steps")
+```
 
-## What is mean total number of steps taken per day?
+We can now provide the mean and the median
+```{r}
+Step_mean <- mean(Total.Step.Day$steps)
+Step_mean
+Step_med <- median(Total.Step.Day$steps)
+Step_med
+```
 
+What is the average daily activity pattern? Let's try to visualize a couple of aspects of the activity:
 
+Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+```{r}
+interval <- aggregate(steps ~ interval, df, mean)
+plot(interval, type = "l")
+```
 
-## What is the average daily activity pattern?
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps? Just plotting to see where the peak is relative to the other intervals (note that it is similar than the previous graph)
+```{r}
+max <- aggregate(steps ~ interval, df, sum)
+plot(max, type = "l")
+Max.Interval <- interval$interval[which.max(interval$steps)]
+Max.Interval
+```
 
+Imputing missing values:
+```{r}
+nrow(read.csv("activity.csv")) ## original file total rows
+sum(is.na(read.csv("activity.csv"))) ## number of rows with NA
+```
+ 
+Conclusion: There isn't much difference between the 2 sets of Data.
 
+Are there differences in activity patterns between weekdays and weekends?
 
-## Imputing missing values
+1. Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+```{r}
+DayType <- function(date) {
+    if (weekdays(as.Date(date)) %in% c("Saturday", "Sunday")) {
+        "weekend"
+    } else {
+        "weekday"
+    }
+}
+```
 
+Applying to the function to the data, adding a column
+```{r}
+df$DayType <- as.factor(sapply(df$date, DayType))
+```
 
-
-## Are there differences in activity patterns between weekdays and weekends?
+2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+```{r}
+Day_Type <- aggregate(steps ~ interval, df, subset = df$DayType == "weekend", mean)
+plot(Day_Type, type = "l", main = "Weekend Days")
+Day_Type <- aggregate(steps ~ interval, df, subset = df$DayType == "weekday", mean)
+plot(Day_Type, type = "l", main = "Week Days")
+##Day_Type <- aggregate(steps ~ interval+DayType,data = df, FUN = mean)
+##Day_Type
+##xyplot(steps ~ interval|Day_Type$DayType,data = Day_Type)
+```
